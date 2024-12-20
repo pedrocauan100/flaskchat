@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flaskchat</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        /* Estilo geral */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #1b1b1b;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        #header {
+            text-align: center;
+            padding: 20px 10px;
+            background-color: #1b1b1b;
+            border-bottom: 2px solid rgb(255, 255, 255);
+        }
+
+        #header h1 {
+            font-size: 2.5rem;
+            color: rgb(11, 151, 81);
+            text-shadow: 0 0 10px rgb(45, 119, 48), 0 0 20px rgb(201, 226, 108);
+            margin: 0;
+        }
+
+        #chat-container {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 10px;
+            background-color: #2d2d2d;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #messages {
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #1b1b1b;
+        }
+
+        #messages p {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+
+        #messages .user {
+            color: #6fca25;
+            font-weight: bold;
+        }
+
+        #input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #nickname,
+        #messageInput,
+        #imageInput {
+            width: 100%;
+            padding: 8px;
+            font-size: 0.9rem;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #1b1b1b;
+            color: #ffffff;
+            outline: none;
+        }
+
+        #sendButton {
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+            color: #fff;
+            background-color: rgb(86, 90, 87);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #sendButton:hover {
+            background-color: rgb(44, 122, 41);
+        }
+
+        /* Estilo para a área de arraste da imagem */
+        #imageInputArea {
+            border: 2px dashed #444;
+            padding: 20px;
+            text-align: center;
+            color: #bbb;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        #imageInputArea.dragover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Exibe a pré-visualização da imagem */
+        #imagePreview {
+            max-width: 100%;
+            max-height: 150px;
+            margin-top: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="header">
+        <h1>FLASKCHAT</h1>
+        <p>Este é chat feito com Flask SocketIO.</p>
+    </div>
+
+    <div id="chat-container">
+        <div id="messages"></div>
+        <div id="input-container">
+            <input id="nickname" type="text" placeholder="Nickname (opcional)">
+            <input id="messageInput" type="text" placeholder="Digite sua mensagem">
+            <div id="imageInputArea" class="drag-area">
+                <p>Arraste e solte uma imagem aqui ou clique para selecionar um arquivo</p>
+                <input id="imageInput" type="file" accept="image/*" style="display: none;">
+                <!-- Pré-visualização da imagem -->
+                <img id="imagePreview" src="" alt="Pré-visualização da Imagem">
+            </div>
+            <button id="sendButton">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        const nicknameInput = document.getElementById("nickname");
+        const messageInput = document.getElementById("messageInput");
+        const sendButton = document.getElementById("sendButton");
+        const messagesDiv = document.getElementById("messages");
+        const imageInput = document.getElementById("imageInput");
+        const imageInputArea = document.getElementById("imageInputArea");
+        const imagePreview = document.getElementById("imagePreview");
+
+        // Função para exibir as mensagens no chat
+        function displayMessage(message) {
+            const messageElement = document.createElement("p");
+            const userElement = `<span class="user">${message.nickname}:</span>`;
+
+            if (message.image) {
+                // Se houver uma imagem, exibe-a
+                messageElement.innerHTML = `${userElement} <img src="${message.image}" alt="Imagem" style="max-width: 100%; border-radius: 5px; margin-top: 5px;">`;
+            } else {
+                messageElement.innerHTML = `${userElement} ${message.message}`;
+            }
+
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Rolagem automática
+        }
+
+        // Envia a mensagem
+        sendButton.addEventListener("click", () => {
+            const nickname = nicknameInput.value || "Anônimo";
+            const message = messageInput.value.trim();
+            const image = imageInput.files[0]; // Obtém a imagem selecionada
+
+            if (message || image) {
+                const formData = { nickname, message };
+
+                if (image) {
+                    // Converte a imagem para base64 antes de enviar
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        formData.image = reader.result; // Armazena a imagem em base64
+                        socket.emit("message", formData);
+                    };
+                    reader.readAsDataURL(image); // Lê a imagem como DataURL
+                } else {
+                    socket.emit("message", formData);
+                }
+
+                messageInput.value = ""; 
+                imageInput.value = ""; 
+                imagePreview.style.display = "none"; 
+            }
+        });
+
+        socket.on("message", (data) => {
+            displayMessage(data);
+        });
+
+        socket.on("load_messages", (messages) => {
+            messagesDiv.innerHTML = "";
+            messages.forEach(msg => {
+                displayMessage(msg);
+            });
+        });
+
+        // Lidar com o evento de arrastar e soltar a imagem
+        imageInputArea.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            imageInputArea.classList.add("dragover");
+        });
+
+        imageInputArea.addEventListener("dragleave", () => {
+            imageInputArea.classList.remove("dragover");
+        });
+
+        imageInputArea.addEventListener("drop", (e) => {
+            e.preventDefault();
+            imageInputArea.classList.remove("dragover");
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith("image/")) {
+                const file = files[0];
+
+                // Exibe a pré-visualização da imagem
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    imagePreview.src = reader.result;
+                    imagePreview.style.display = "block"; // Exibe a imagem
+                    imageInput.value = ""; // Limpa o campo de arquivo
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Clique para escolher o arquivo de imagem
+        imageInputArea.addEventListener("click", () => {
+            imageInput.click();
+        });
+
+        // Quando uma imagem for escolhida
+        imageInput.addEventListener("change", () => {
+            const file = imageInput.files[0];
+            if (file && file.type.startsWith("image/")) {
+                // Exibe a pré-visualização da imagem
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    imagePreview.src = reader.result;
+                    imagePreview.style.display = "block"; // Exibe a imagem
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+
+</html>
