@@ -4,7 +4,9 @@
     {
       "src": "app.py",
       "use": "@vercel/python",
-      "config": { "buildCommand": "prisma generate" }
+      "config": {
+        "buildCommand": "pip install -r requirements.txt && prisma generate"
+      }
     }
   ],
   "routes": [
