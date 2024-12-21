@@ -5,15 +5,11 @@ from flask_socketio import SocketIO, emit
 from prisma import Prisma
 import pytz
 
-# Inicializa o Prisma
 prisma = Prisma()
 
-# Configura o Flask e o SocketIO
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-
-# Função assíncrona para verificar a conexão com o banco de dados
 async def check_db_connection():
     try:
         # Tenta buscar um registro para verificar a conexão
@@ -28,8 +24,6 @@ async def check_db_connection():
         print(f"Erro ao verificar a conexão com o banco de dados: {e}")
         return False
 
-
-# Função assíncrona para conectar ao banco de dados
 async def connect_to_db():
     try:
         await prisma.connect()
@@ -41,21 +35,15 @@ async def connect_to_db():
     except Exception as e:
         print(f"Erro ao conectar ao banco de dados: {e}")
 
-
-# Inicializa o banco de dados
 def init_db():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(connect_to_db())
 
-
-# Rota principal
 @app.route("/")
 def index():
     return render_template("index.html")
 
-
-# Função assíncrona para buscar todas as mensagens
 async def fetch_all_messages():
     try:
         if not prisma.is_connected():
@@ -71,7 +59,7 @@ async def fetch_all_messages():
         return []
 
 
-# Função para obter o IP público do usuário
+# Função para obter o IP do usuário
 def get_public_ip():
     if request.headers.get('X-Forwarded-For'):
         ip = request.headers.get('X-Forwarded-For').split(',')[0]
@@ -82,7 +70,7 @@ def get_public_ip():
     return ip
 
 
-# Função assíncrona para salvar uma mensagem
+# Função para salvar uma mensagem
 async def save_message(data):
     try:
         if not prisma.is_connected():
@@ -111,7 +99,7 @@ async def save_message(data):
         print(f"Erro ao salvar mensagem: {e}, Dados: {data}")
 
 
-# Função assíncrona para deletar mensagens antigas
+# Função para deletar mensagens antigas
 async def delete_old_messages():
     try:
         if not prisma.is_connected():
@@ -122,14 +110,10 @@ async def delete_old_messages():
     except Exception as e:
         print(f"Erro ao deletar mensagens antigas: {e}")
 
-
-# Evento de conexão de um novo usuário
 @socketio.on('connect')
 def handle_connect():
     print("Novo usuário conectado")
 
-
-# Evento de recebimento de mensagem
 @socketio.on("message")
 def handle_message(data):
     print(f"Mensagem recebida: {data}")
