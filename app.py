@@ -4,19 +4,6 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 from prisma import Prisma
 import pytz
-import subprocess
-
-# Log para verificar se o arquivo app.py está sendo executado
-print("Running app.py")
-
-# Executar prisma generate e logar a saída
-result = subprocess.run(["prisma", "generate"], capture_output=True, text=True)
-print("Prisma generate output:", result.stdout)
-print("Prisma generate errors:", result.stderr)
-
-# Verificação adicional se a geração do Prisma foi bem-sucedida
-if result.returncode != 0:
-    raise RuntimeError("Prisma generate falhou. Verifique os logs para mais detalhes.")
 
 prisma = Prisma()
 
