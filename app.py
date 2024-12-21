@@ -58,7 +58,6 @@ async def fetch_all_messages():
         print(f"Erro ao buscar mensagens: {e}")
         return []
 
-
 # Função para obter o IP do usuário
 def get_public_ip():
     if request.headers.get('X-Forwarded-For'):
@@ -68,7 +67,6 @@ def get_public_ip():
     else:
         ip = request.remote_addr
     return ip
-
 
 # Função para salvar uma mensagem
 async def save_message(data):
@@ -98,7 +96,6 @@ async def save_message(data):
     except Exception as e:
         print(f"Erro ao salvar mensagem: {e}, Dados: {data}")
 
-
 # Função para deletar mensagens antigas
 async def delete_old_messages():
     try:
@@ -127,7 +124,6 @@ def handle_message(data):
         emit("message", data, broadcast=True)
     except Exception as e:
         print(f"Erro ao processar mensagem: {e}")
-
 
 if __name__ == "__main__":
     print("Iniciando o servidor Flask com SocketIO...")
