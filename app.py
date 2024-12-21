@@ -12,7 +12,6 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 async def check_db_connection():
     try:
-        # Tenta buscar um registro para verificar a conexão
         result = await prisma.message.find_first()
         if result is not None:
             print("Conexão com o banco de dados está funcionando corretamente.")
@@ -28,7 +27,6 @@ async def connect_to_db():
     try:
         await prisma.connect()
         print("Conexão com o banco de dados estabelecida com sucesso")
-        # Verifica se a conexão está funcionando corretamente
         connection_status = await check_db_connection()
         if not connection_status:
             print("Falha na verificação da conexão com o banco de dados.")
@@ -58,7 +56,6 @@ async def fetch_all_messages():
         print(f"Erro ao buscar mensagens: {e}")
         return []
 
-# Função para obter o IP do usuário
 def get_public_ip():
     if request.headers.get('X-Forwarded-For'):
         ip = request.headers.get('X-Forwarded-For').split(',')[0]
@@ -68,16 +65,12 @@ def get_public_ip():
         ip = request.remote_addr
     return ip
 
-# Função para salvar uma mensagem
 async def save_message(data):
     try:
         if not prisma.is_connected():
             await prisma.connect()
 
-        # Obter o IP real do usuário
         ip = get_public_ip()
-
-        # Ajustar o timestamp para o fuso horário do Brasil
         brazil_tz = pytz.timezone('America/Sao_Paulo')
         timestamp = datetime.now(brazil_tz)
 
@@ -86,17 +79,16 @@ async def save_message(data):
             "message": data.get("message", ""),
             "timestamp": timestamp,
             "ip": ip,
-            "image": data.get("image", None)  # Usar .get para campo opcional
+            "image": data.get("image", None)
         }
 
-        print("Dados da mensagem a serem salvos:", message_data)  # Log dos dados a serem salvos
+        print("Dados da mensagem a serem salvos:", message_data)
 
         await prisma.message.create(data=message_data)
         print("Mensagem salva com sucesso:", message_data)
     except Exception as e:
         print(f"Erro ao salvar mensagem: {e}, Dados: {data}")
 
-# Função para deletar mensagens antigas
 async def delete_old_messages():
     try:
         if not prisma.is_connected():
@@ -116,11 +108,9 @@ def handle_message(data):
     print(f"Mensagem recebida: {data}")
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    # Salva a mensagem no banco de dados e deleta as antigas
     try:
         loop.run_until_complete(save_message(data))
         loop.run_until_complete(delete_old_messages())
-        # Envia a nova mensagem para todos os usuários conectados
         emit("message", data, broadcast=True)
     except Exception as e:
         print(f"Erro ao processar mensagem: {e}")
